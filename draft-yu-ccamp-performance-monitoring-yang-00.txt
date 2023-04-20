@@ -1,0 +1,1848 @@
+
+
+
+
+CCAMP Working Group                                                C. Yu
+Internet-Draft                                       Huawei Technologies
+Intended status: Standards Track                            F. Peruzzini
+Expires: 8 September 2023                                            TIM
+                                                                Y. Zheng
+                                                            China Unicom
+                                                                 I. Busi
+                                                     Huawei Technologies
+                                                                  A. Guo
+                                                  Futurewei Technologies
+                                                            7 March 2023
+
+
+          A YANG Data Model for Optical Performance Monitoring
+             draft-yu-ccamp-performance-monitoring-yang-00
+
+Abstract
+
+   This document defines a YANG data model for performance Monitoring in
+   optical networks which provides the functionalities of performance
+   monitoring task management, TCA (Threshold Crossing Alert)
+   configuration and current or historic performance data retrieval.
+   This data model should be used in the northbound of PNC.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 8 September 2023.
+
+Copyright Notice
+
+   Copyright (c) 2023 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+
+
+
+
+
+Yu, et al.              Expires 8 September 2023                [Page 1]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
+     1.1.  Terminology and Notations . . . . . . . . . . . . . . . .   4
+     1.2.  Tree Diagram  . . . . . . . . . . . . . . . . . . . . . .   4
+     1.3.  Prefix in Data Node Names . . . . . . . . . . . . . . . .   4
+   2.  YANG Data Model for Optical Performance Monitoring  . . . . .   5
+     2.1.  Performance Management Control  . . . . . . . . . . . . .   5
+     2.2.  PerformanceManagementRetrieval  . . . . . . . . . . . . .   6
+     2.3.  Threshold Crossing Alert Control  . . . . . . . . . . . .   7
+     2.4.  Generic Resource  . . . . . . . . . . . . . . . . . . . .  10
+   3.  Performance Indicator Introduction  . . . . . . . . . . . . .  11
+   4.  Optical Performance Monitoring Tree Diagram . . . . . . . . .  11
+   5.  YANG Model for Optical Performance Monitoring . . . . . . . .  13
+   6.  YANG Model for Optical Performance Monitoring Types . . . . .  26
+   7.  Manageability Considerations  . . . . . . . . . . . . . . . .  29
+   8.  Security Considerations . . . . . . . . . . . . . . . . . . .  29
+   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  29
+   10. References  . . . . . . . . . . . . . . . . . . . . . . . . .  30
+     10.1.  Normative References . . . . . . . . . . . . . . . . . .  30
+     10.2.  Informative References . . . . . . . . . . . . . . . . .  31
+   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .  32
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  32
+
+1.  Introduction
+
+   Performance monitoring is a basic function of optical networks
+   management.  With it, operators can proactively detect the running
+   state of devices, identify major risks in advanced and avoid users'
+   complaints.
+
+   As before, TMF has defined interfaces for performance management
+   through traditional protocols, such as CORBA and MTOSI.  With the
+   development of SDN technologies and the using of RESTCONF interfaces,
+   it becomes a widespread requirement to use RESTCONF protocol to
+   support performance monitoring.
+
+
+
+
+
+
+Yu, et al.              Expires 8 September 2023                [Page 2]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   Using RESTCONF does not mean changing existing performance monitoring
+   requirements or scenarios.  On the contrary, since O&M is very
+   important, many operators' O&M departments tend to be conservative.
+   Mostly, they are fear of introducing issues into their network due to
+   the protocol changes and O&M habits changes.  Therefore, our document
+   prefers to use the new protocol to support legacy functionality.
+
+   Traditional performance management involves control of performance
+   monitoring, setting collectors on monitored objects, and obtaining
+   performance data in different periods.  The data can be current data
+   on devices or processed by PNC, and historical performance data.  TCA
+   can be also configured by performance monitoring tasks.
+
+   The explanation of performance monitoring indicator would also be an
+   important part of this document, especially some typical optical-
+   specific indicators.
+
+   Currently, there are some existing documents related to performance
+   monitoring in IETF, but there is no overlap with our current work.
+   For example:
+
+   [I-D.ietf-teas-actn-pm-telemetry-autonomics] provides a YANG data
+   model that describes performance monitoring and scaling intent
+   mechanisms for TE-Tunnels and Virtual Networks(VNs).  VN is
+   determinated to be used in CMI (CNC-MDSC Interface) level and TE
+   tunnel is more service or connection related.  Our data model is
+   proposed to be used in MPI (MDSC-PNC Interface) level and this
+   performance monitoring is performed on network resources, such as
+   network element, board, fiber, port or TTP (Tunnel Termination
+   Point), which are not included in
+   [I-D.ietf-teas-actn-pm-telemetry-autonomics].
+
+   [I-D.ietf-opsawg-yang-vpn-service-pm] defines a YANG data model for
+   performance monitoring of both network topology layer and overlay VPN
+   service topology layer.  VPN service is more IP-specific and not
+   adopted in Optical domain.  And the data model in this document is
+   augmenting network model.  If the client wants to retrieve
+   performance data of a link by RESTCONF, the URL would be probably
+   same with the URL of topology retrieval.  This may need some special
+   mechanisms to make the client and server differentiate the using
+   scenarios.  This is not quite compliance with current O&M habits of
+   Optical technology.
+
+   [I-D.zheng-ccamp-client-pm-yang] provides a performance monitoring
+   YANG data model on client signal level.  It is also not operated on
+   resource level which is not compliance with the existing O&M habits.
+   This performance monitoring solution is more user-oriented and can be
+   used for more automatic O&M scenarios in the future.  However, there
+
+
+
+Yu, et al.              Expires 8 September 2023                [Page 3]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   is not a complete closed-loop O&M solution at the service layer and
+   it has not been accepted by all operators' O&M departments, resource-
+   based performance monitoring is still required.
+
+   The YANG data model defined in this document conforms to the Network
+   Management Datastore Architecture (NMDA) defined in [RFC8342].
+
+1.1.  Terminology and Notations
+
+   Refer to [RFC7446] and [RFC7581] for the key terms used in this
+   document.  The following terms are defined in [RFC7950] and are not
+   redefined here: * client * server * augment * data model * data node
+
+   The following terms are defined in [RFC6241] and are not redefined
+   here: * configuration data * state data
+
+   The following terms are defined in [RFC8454] and are not redefined
+   here: * CMI * MPI * MDSC * CNC * PNC
+
+   //To Be Added: some explanation of performance indicator
+
+1.2.  Tree Diagram
+
+   A simplified graphical representation of the data model is used in
+   Section 3 of this document.  The meaning of the symbols in these
+   diagrams are defined in [RFC8340].
+
+1.3.  Prefix in Data Node Names
+
+   In this document, names of data nodes and other data model objects
+   are prefixed using the standard prefix associated with the
+   corresponding YANG imported modules, as shown in the following table.
+
+       +==============+================================+===========+
+       | Prefix       | Yang Module                    | Reference |
+       +==============+================================+===========+
+       | optrpm       | ietf-optical-resource-pm       | RFC XXXX  |
+       +--------------+--------------------------------+-----------+
+       | optrpm-types | ietf-optical-resource-pm-types | RFC XXXX  |
+       +--------------+--------------------------------+-----------+
+       | yang         | ietf-yang-types                | [RFC6991] |
+       +--------------+--------------------------------+-----------+
+
+              Table 1: Prefixes and corresponding YANG modules
+
+   RFC Editor Note: Please replace XXXX with the RFC number assigned to
+   this document.
+
+
+
+
+Yu, et al.              Expires 8 September 2023                [Page 4]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+2.  YANG Data Model for Optical Performance Monitoring
+
+   According to the business requirements stated in [TMF-518], resource
+   performance management requirements include: * The Interface shall
+   support the control of performance monitoring in the network.  This
+   includes PM control, e.g., the enabling and disabling of PM
+   collection and Threshold Crossing Alerts (TCA) control, e.g., the
+   enabling and disabling of TCA generation. * The Interface shall
+   support the retrieval of current and historical performance
+   measurements for network resources. * The Interface shall support the
+   distribution of TCAs to subscribed OSs.
+
+   For these requirements of PM, there are three group of interfaces are
+   defined in TMF, including PerformanceManagementControl,
+   PerformanceManagementRetrieval and ThresholdCrossingAlertControlm.
+
+2.1.  Performance Management Control
+
+   There are three interfaces defined in TMF for this group, including:
+   * clearPerformanceMonitoringData: This interface shall allow MDSC to
+   clear or reset the performance register on TPs or NEs.  This clearing
+   operation means to reset the data value to the current value.  The
+   monitoring job is still running on. *
+   disablePerformanceMonitoringData: This interface shall allow MDSC
+   disable PM data collection on a list of TPs or NEs. *
+   enablePerformanceMonitoringData: This interface shall allow MDSC
+   enable PM data collection on a list of TPs or NEs.
+
+   This aspect of interface we introduce a monitor task to do this
+   control.  In the monitoring task, MDSC should be able to configure
+   what period and what kind of performance data it want to collect.
+   The disabling, enabling operation can be satisfy by changing the
+   admin status which includes disabled, enabled.  The change's result
+   will affect the task status accordingly.
+
+   //NOTES: To be added. to support the clearPerformanceMonitoringData
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu, et al.              Expires 8 September 2023                [Page 5]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   module: ietf-optical-resource-pm
+      +--rw performance-monitoring
+         +--rw monitor-tasks
+         |  +--rw monitor-task* [task-id]
+         |     +--rw task-id          yang:uuid
+         |     +--rw resource-id?     leafref
+         |     +--ro resource-type?   identityref
+         |     +--rw task-name?       string
+         |     +--rw admin-status?    enumeration
+         |     +--ro task-status?     enumeration
+         |     +--rw task-cfg
+         |        +--rw period?       identityref
+         |        +--rw indicators
+         |           +--rw indicator* [indicator-name]
+         |              +--rw indicator-name          string
+         |              +--rw indicator-value-unit?   string
+
+2.2.  PerformanceManagementRetrieval
+
+   There are six interfaces are defined in TMF for this group,
+   including: * getAllCurrentPerformanceMonitoringData: This interface
+   should allow MDSC to retrieve performance data on a series of
+   termination point. * getHistoryPerformanceMonitoringData: This
+   interface should allow MDSC to retrieve some historic performance
+   data on a series of termination point in a time period through FTP. *
+   getAllPerformanceMonitoringPoints: This interface should allow MDSC
+   to retrieve all the performance monitoring points in a specified
+   termination point or NE. * getHoldingTime: This interface should
+   allow MDSC to retrieve how many hours PM data records are held in
+   PNC. * getMePerformanceMonitoringCapabilities: This interface should
+   allow MDSC to retrieve what parameters are supported by a specified
+   NE or termination point.
+
+   For the retrieval of current/historic performance data, there is one
+   option that we define the value in the data model.  But considered
+   that performance data is frequently changed and if we follow that
+   approach, according to the requirement of on-change notification in
+   YANG-push [RFC8641], once the performance data changes, the PNC
+   should trigger a notifcation to the MDSC, for the sake of data
+   consistency.  But these two retrieval interfaces is more like on-
+   demand invoking.  The interaction through notification would bring
+   great pressure to both PNC and MDSC.
+
+   And it is also hard to support retrieving performance data of
+   multiple resources by data model.  And for historic performance data
+   retrieval, there could be a requirement to specify the start time and
+   end time.  It is not quite flexible to support this requirement by
+   data model neither.
+
+
+
+Yu, et al.              Expires 8 September 2023                [Page 6]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   So we suggest to define two RPCs to accomplish these two interfaces'
+   function.
+
+   rpcs:
+      +---x get-all-current-pm-data
+      |  +--ro input
+      |  |  +--ro resources*   leafref
+      |  +--ro output
+      |     +--ro pm-data
+      |        +--ro pm-data-list* [resource]
+      |           +--ro resource          leafref
+      |           +--ro collect-time?     yang:date-and-time
+      |           +--ro resource-type?    identityref
+      |           +--ro indicator-data
+      |              +--ro indicator-data-list* [indicator-name]
+      |                 +--ro indicator-name          string
+      |                 +--ro indicator-value?        string
+      |                 +--ro indicator-value-unit?   string
+      +---x get-historic-pm-data
+         +--ro input
+         |  +--ro resources*    leafref
+         |  +--ro start-time?   yang:date-and-time
+         |  +--ro end-time?     yang:date-and-time
+         +--ro output
+            +--ro pm-data
+               +--ro pm-data-list* [resource]
+                  +--ro resource          leafref
+                  +--ro collect-time?     yang:date-and-time
+                  +--ro resource-type?    identityref
+                  +--ro indicator-data
+                     +--ro indicator-data-list* [indicator-name]
+                        +--ro indicator-name          string
+                        +--ro indicator-value?        string
+                        +--ro indicator-value-unit?   string
+
+   //NOTE: To be futhur analyze: getAllPerformanceMonitoringPoints,
+   getHoldingTime, getMePerformanceMonitoringCapabilities
+
+2.3.  Threshold Crossing Alert Control
+
+   There are nine interfaces are defined in TMF for this group,
+   including: * createTcaParameterProfile: This interface should allow
+   MDSC to create a new TCA parameter profile.  This profile can be
+   applied to the resources. * deleteTcaParameterProfile: This interface
+   should allow MDSC to delete an existing TCA parameter profile which
+   should not have been used by any resources. *
+   enableThresholdCrossingAlert: This interface should allow MDSC to
+   turn on TCA reporting on a list of TPs and NEs if the reporting was
+
+
+
+Yu, et al.              Expires 8 September 2023                [Page 7]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   turned off before. * disableThresholdCrossingAlert: This interface
+   should allow MDSC to turn off TCA reporting on a list of TPs and NEs.
+   * getAllTcaParameterProfiles: This interfaces should allow MDSC to
+   retrieve all TCA parameter profile that are being managed by a
+   specified NE. * getTcaParameterProfile: This interface should allow
+   MDSC to retrieve all the parameters of a specified TCA parameter
+   profile. * getTcaTpParameter: This interface should allow MDSC to
+   retrieve the PM threshold values on a TP. * setTcaParameterProfile:
+   This interface should allow MDSC to configure all threshold values of
+   a TCA parameter profile. * setTcaTpParameter: This interface should
+   allow MDSC to modify the values of TCA Parameters on a TP
+
+   To be summarized, there are four main requirements for Threshold
+   Crossing Alert Control: * Creation/retrieval/deletion/updating of TCA
+   profile; * Enabling/disabling TCA reporting on the resource; *
+   Configuring TCA on the resource by associating an existing profile; *
+   Configuring TCA on the resource by detailed parameters.
+
+   And for the TCA parameters, no matter it is configured directly on
+   the resource or by a preset profile, there should not be any
+   differences.  The TCA parameter (indicator) should include: *
+   indicator-name: Name of indicator.  This indicator should also
+   include some data processing information, such if it is a maximum, or
+   minimum, or average data .etc. * threshold-type: This threshold type
+   is used to indicate when the alert will be triggered.  By exceeding
+   the upper bound value, or by below the lower bound value. * period:
+   This period is used to indicate the frequency of the data collection.
+   * severity: This severity is used to indicate what level of alert
+   would be triggered if cross the threshold. * indicator-value: The
+   value of threshold. * indicator-value-unit: The unit of threshold
+   value.
+
+   The tree structure for TCA profile:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu, et al.              Expires 8 September 2023                [Page 8]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+module: ietf-optical-resource-pm
+   +--rw performance-monitoring
+      +--rw monitor-tasks
+      |  +--rw monitor-task* [task-id]
+      |     +--rw task-id          yang:uuid
+      |     +--......................
+      +--rw tca-management
+      |  +--rw profiles
+      |  |  +--rw profile* [profile-id]
+      |  |     +--rw profile-id      yang:uuid
+      |  |     +--rw profile-name?   string
+      |  |     +--rw tca-cfg
+      |  |        +--rw tca-indicator* [indicator-name threshold-type period severity]
+      |  |           +--rw indicator-name          string
+      |  |           +--rw indicator-value         string
+      |  |           +--rw indicator-value-unit    string
+      |  |           +--rw threshold-type          enumeration
+      |  |           +--rw period                  identityref
+      |  |           +--rw severity                identityref
+
+   The function of enabling/disabling TCA on the resource can be
+   controlled by an admin-status attributes in "tca" node:
+
+   module: ietf-optical-resource-pm
+      +--rw performance-monitoring
+         +--rw monitor-tasks
+         |  +--rw monitor-task* [task-id]
+         |     +--rw task-id          yang:uuid
+         |     +--......................
+         +--rw tca-management
+         |     +--rw tca* [resource-id]
+         |        +--rw resource-id         leafref
+         |        +--ro resource-type?      identityref
+         |        +--rw admin-status?       enumeration
+         |        +--......................
+
+   If MDSC wants to configure TCA by an existing profile, it can use
+   this applied-profiles structure:
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu, et al.              Expires 8 September 2023                [Page 9]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   module: ietf-optical-resource-pm
+      +--rw performance-monitoring
+         +--rw monitor-tasks
+         |  +--rw monitor-task* [task-id]
+         |     +--rw task-id          yang:uuid
+         |     +--......................
+         +--rw tca-management
+         |     +--rw tca* [resource-id]
+         |        +--rw resource-id         leafref
+         |        +--ro resource-type?      identityref
+         |        +--rw applied-profiles
+         |        |  +--rw profile* [profile-id]
+         |        |     +--rw profile-id    leafref
+         |        +--......................
+
+   MDSC can also configure TCA value directly by the "tca-cfg"
+   structure:
+
+module: ietf-optical-resource-pm
+   +--rw performance-monitoring
+      +--rw monitor-tasks
+      |  +--rw monitor-task* [task-id]
+      |     +--rw task-id          yang:uuid
+      |     +--......................
+      +--rw tca-management
+      |     +--rw tca* [resource-id]
+      |        +--rw resource-id         leafref
+      |        +--ro resource-type?      identityref
+      |        +--......................
+      |        +--rw tca-cfg
+      |           +--rw tca-indicator* [indicator-name threshold-type period severity]
+      |              +--rw indicator-name          string
+      |              +--rw indicator-value         string
+      |              +--rw indicator-value-unit    string
+      |              +--rw threshold-type          enumeration
+      |              +--rw period                  identityref
+      |              +--rw severity                identityref
+
+2.4.  Generic Resource
+
+   The definition of most performance monitoring interfaces in TMF is
+   quite generic.  And it is also similar that the functionalities of
+   both alarm and performance monitoring can be defined with a generic
+   structure, regardless of what kind of object is operated on.
+   Therefore, our data model prefer to follow this approach.  And when
+   defining our data model, we get refer to [RFC8632], in which a
+   generic alarm data model is provided.  In [RFC8632], a union type of
+   resource attributes is defined as the source of alarm.  So we also
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 10]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   reference this structure in our data model.
+
+   Additionally, we extend a resource-type attribute to indicate what
+   exact kind of resource is.  Firstly, this attribute can help to
+   improve interaction efficiency between PNC and MDSC.  The MDSC may
+   quickly identify the resource type from this attribute, without
+   parsing the resource identifier or searching the resource id in the
+   whole resource.  On the other hand, it will be unified with the
+   existing IETF topology and inventory objects and form a complete
+   interface system.
+
+   module: ietf-optical-resource-pm
+      +--rw performance-monitoring
+         +--rw resources
+            +--rw resource* [resource-id]
+               +--rw resource-id      union
+               +--ro resource-type?   identityref
+
+3.  Performance Indicator Introduction
+
+   //To Be Added
+
+4.  Optical Performance Monitoring Tree Diagram
+
+module: ietf-optical-resource-pm
+   +--rw performance-monitoring
+      +--rw monitor-tasks
+      |  +--rw monitor-task* [task-id]
+      |     +--rw task-id          yang:uuid
+      |     +--rw resource-id?     leafref
+      |     +--ro resource-type?   identityref
+      |     +--rw task-name?       string
+      |     +--rw admin-status?    enumeration
+      |     +--ro task-status?     enumeration
+      |     +--rw task-cfg
+      |        +--rw period?       identityref
+      |        +--rw indicators
+      |           +--rw indicator* [indicator-name]
+      |              +--rw indicator-name          string
+      |              +--rw indicator-value-unit?   string
+      +--rw tca-management
+      |  +--rw profiles
+      |  |  +--rw profile* [profile-id]
+      |  |     +--rw profile-id      yang:uuid
+      |  |     +--rw profile-name?   string
+      |  |     +--rw tca-cfg
+      |  |        +--rw tca-indicator* [indicator-name threshold-type period severity]
+      |  |           +--rw indicator-name          string
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 11]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+      |  |           +--rw indicator-value         string
+      |  |           +--rw indicator-value-unit    string
+      |  |           +--rw threshold-type          enumeration
+      |  |           +--rw period                  identityref
+      |  |           +--rw severity                identityref
+      |  +--rw tcas
+      |     +--rw tca* [resource-id]
+      |        +--rw resource-id         leafref
+      |        +--ro resource-type?      identityref
+      |        +--rw admin-status?       enumeration
+      |        +--rw applied-profiles
+      |        |  +--rw profile* [profile-id]
+      |        |     +--rw profile-id    leafref
+      |        +--rw tca-cfg
+      |           +--rw tca-indicator* [indicator-name threshold-type period severity]
+      |              +--rw indicator-name          string
+      |              +--rw indicator-value         string
+      |              +--rw indicator-value-unit    string
+      |              +--rw threshold-type          enumeration
+      |              +--rw period                  identityref
+      |              +--rw severity                identityref
+      +--rw resources
+         +--rw resource* [resource-id]
+            +--rw resource-id      union
+            +--ro resource-type?   identityref
+rpcs:
+   +---x get-all-current-pm-data
+   |  +--ro input
+   |  |  +--ro resources*   leafref
+   |  +--ro output
+   |     +--ro pm-data
+   |        +--ro pm-data-list* [resource]
+   |           +--ro resource          leafref
+   |           +--ro collect-time?     yang:date-and-time
+   |           +--ro resource-type?    identityref
+   |           +--ro indicator-data
+   |              +--ro indicator-data-list* [indicator-name]
+   |                 +--ro indicator-name          string
+   |                 +--ro indicator-value?        string
+   |                 +--ro indicator-value-unit?   string
+   +---x get-historic-pm-data
+      +--ro input
+      |  +--ro resources*    leafref
+      |  +--ro start-time?   yang:date-and-time
+      |  +--ro end-time?     yang:date-and-time
+      +--ro output
+         +--ro pm-data
+            +--ro pm-data-list* [resource]
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 12]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+               +--ro resource          leafref
+               +--ro collect-time?     yang:date-and-time
+               +--ro resource-type?    identityref
+               +--ro indicator-data
+                  +--ro indicator-data-list* [indicator-name]
+                     +--ro indicator-name          string
+                     +--ro indicator-value?        string
+                     +--ro indicator-value-unit?   string
+
+    Figure 1: Optical Resource Performance Monitoring tree diagram
+
+5.  YANG Model for Optical Performance Monitoring
+
+   <CODE BEGINS> file "ietf-optical-resource-pm@2023-03-01.yang"
+   module ietf-optical-resource-pm {
+     yang-version 1.1;
+     namespace "urn:ietf:params:xml:ns:yang:ietf-optical-resource-pm";
+     prefix optrpm;
+
+     import ietf-yang-types {
+       prefix "yang";
+     }
+
+     import ietf-optical-resource-pm-types {
+       prefix "optrpm-types";
+     }
+
+
+     organization
+       "IETF CCAMP Working Group";
+
+     contact
+       "WG Web:   <https://datatracker.ietf.org/wg/ccamp/>
+        WG List:  <mailto:ccamp@ietf.org>
+
+        Editor:   Chaode Yu
+                  <yuchaode@huawei.com>";
+
+     description
+       "This module defines a model for optical performance
+       monitoring.
+
+       The model fully conforms to the Network Management
+       Datastore Architecture (NMDA).
+
+       Copyright (c) 2022 IETF Trust and the persons
+       identified as authors of the code.  All rights reserved.
+
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 13]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+       Redistribution and use in source and binary forms, with or
+       without modification, is permitted pursuant to, and subject
+       to the license terms contained in, the Revised BSD License
+       set forth in Section 4.c of the IETF Trust's Legal Provisions
+       Relating to IETF Documents
+       (https://trustee.ietf.org/license-info).
+
+       This version of this YANG module is part of RFC XXXX; see
+       the RFC itself for full legal notices.
+
+       The key words 'MUST', 'MUST NOT', 'REQUIRED', 'SHALL', 'SHALL
+       NOT', 'SHOULD', 'SHOULD NOT', 'RECOMMENDED', 'NOT RECOMMENDED',
+       'MAY', and 'OPTIONAL' in this document are to be interpreted as
+       described in BCP 14 (RFC 2119) (RFC 8174) when, and only when,
+       they appear in all capitals, as shown here.";
+
+
+     revision 2023-03-01 {
+       description  "Initial revision.";
+     }
+
+     container performance-monitoring {
+       description
+         "the root node.";
+
+       uses monitoring-tasks-grouping;
+       uses tca-management-grouping;
+       uses resource-info-grouping;
+     }
+
+     grouping resource-info-grouping {
+       description
+         "grouping of resources' PM capabilities related information";
+
+       container resources {
+         description
+           "resources' PM capabilities related information";
+
+         list resource {
+           description
+             "list of resource instances";
+           key resource-id;
+
+           leaf resource-id {
+             type union {
+               type instance-identifier {
+                 require-instance false;
+               }
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 14]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+               type yang:object-identifier;
+               type string;
+              type yang:uuid;
+             }
+           }
+
+           leaf resource-type {
+             description
+               "the type of resource, such as NE, board or port";
+
+             config false;
+             type identityref {
+               base optrpm-types:resource-type;
+             }
+           }
+
+           //TO BE ADDED: holding-time, capabilities etc.
+         }
+       }
+     }
+
+     grouping monitoring-tasks-grouping {
+       description
+         "grouping of performance monitoring task";
+
+       container monitor-tasks {
+         description
+           "Information of PM tasks";
+
+         list monitor-task {
+           description
+             "monitoring task list";
+
+           key task-id;
+           uses task-instance-grouping;
+         }
+       }
+     }
+
+
+     grouping task-instance-grouping {
+       description
+         "grouping of performance monitoring task. In this monitoring
+         task, the client can specify a resource to run a monitor task
+         and what kind of performance data need to be monitored.";
+
+       leaf task-id {
+         description
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 15]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+           "identifier of the performance task";
+         type yang:uuid;
+       }
+
+       leaf resource-id {
+         description
+           "the identifier of network resource on which the performance
+           monitoring task is running";
+
+         type leafref {
+           path "/optrpm:performance-monitoring/optrpm:resources" +
+           "/optrpm:resource/optrpm:resource-id";
+         }
+       }
+
+       leaf resource-type {
+         description
+           "the type of resource, such as NE, board or port";
+
+         config false;
+         type identityref {
+           base optrpm-types:resource-type;
+         }
+       }
+
+       leaf task-name {
+         description
+           "the name of monitoring task";
+
+         type string;
+       }
+
+       leaf admin-status {
+         description
+           "it is used to control enbling/disabling PM task";
+
+         type enumeration {
+           enum enabled {
+             description
+               "it is used to enable the pm task, if the task is enabled,
+               the task-staus should be running";
+           }
+
+           enum disabled {
+             description
+               "it is used to disenable the pm task, if the task is
+               disabled, the task-staus should be suspended";
+           }
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 16]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+         }
+       }
+
+       leaf task-status {
+         config false;
+         description
+           "the status of monitoring task.";
+
+         type enumeration {
+           enum running;
+
+           enum suspended;
+
+           enum abnormal;
+         }
+       }
+
+       uses task-configuration-grouping;
+     }
+
+     grouping task-configuration-grouping {
+       description
+         "grouping of pm task configuration";
+
+       container task-cfg {
+         description
+           "Configuration of the monitoring task";
+
+         leaf period {
+           description
+             "it is used to indicate the interval as per monitoring
+             task";
+           type identityref {
+             base optrpm-types:period;
+           }
+         }
+
+         container indicators {
+           description
+             "performance indicators";
+
+           list indicator {
+             description
+               "list of PM indicators to be monitored";
+
+             key indicator-name;
+             uses indicator-grouping;
+           }
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 17]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+         }
+       }
+     }
+
+     grouping indicator-grouping {
+       description
+         "grouping of a monitoring indicator instance";
+
+       leaf indicator-name {
+         description
+           "performance indicator's name";
+
+         type string;
+       }
+
+       leaf indicator-value-unit {
+         description
+           "unit of indicator value";
+
+         type string;
+       }
+     }
+
+     grouping tca-management-grouping {
+       description
+         "grouping of configuration and management for Threshol Crossing
+         Alert";
+
+       container tca-management {
+         description
+           "configuration and management for Threshol Crossing Alert";
+
+         container profiles {
+           description
+             "the TCA profile in the whole network";
+
+           list profile {
+             description
+               "List of TCA profile instances";
+
+             key "profile-id";
+             uses tca-profile-grouping;
+           }
+         }
+
+         container tcas {
+           description
+             "TCA configuration on the network resources.";
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 18]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+           list tca {
+             description
+               "List of TCA configuration instances";
+
+             key "resource-id";
+
+             leaf resource-id {
+               description
+                 "the identifier of network resource on which threshold
+                 is configured for TCA purpose";
+
+               type leafref {
+                 path "/optrpm:performance-monitoring/optrpm:resources" +
+                 "/optrpm:resource/optrpm:resource-id";
+               }
+             }
+
+             leaf resource-type {
+               description
+                 "the type of resource, such as NE, board or termination
+                 point";
+
+               config false;
+
+               type identityref {
+                 base optrpm-types:resource-type;
+               }
+             }
+
+             leaf admin-status {
+               description
+                 "it is used to control the validity of threshold";
+               type enumeration {
+                 enum enabled {
+                 description
+                   "if the admin-status of TCA configuration is enabled,
+                   the threshold is effective";
+                 }
+
+                 enum disabled {
+                   description
+                     "if the admin-status of TCA configuration is
+                     disabled, the threshold is not effective";
+                 }
+               }
+             }
+
+             uses tca-grouping;
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 19]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+           }
+         }
+       }
+     }
+
+     grouping tca-profile-grouping {
+       description
+         "grouping of TCA profile instance";
+
+       leaf profile-id {
+         description
+           "identifier of threshold crossing alerrt profile";
+
+         type yang:uuid;
+       }
+
+       leaf profile-name {
+         description
+           "Name of the threshold crossing alerrt profile";
+
+         type string;
+       }
+
+       container tca-cfg {
+         description
+           "detailed TCA configuration in a profile";
+
+         list tca-indicator {
+           description
+             "list of TCA configuration.";
+
+           key "indicator-name threshold-type period severity";
+           uses tca-indicator-grouping;
+         }
+       }
+     }
+
+     grouping tca-indicator-grouping {
+       description
+         "grouping for detail TCA configuration";
+       leaf indicator-name {
+         type string;
+         description
+           "name of the indicator";
+       }
+
+       leaf indicator-value {
+         mandatory true;
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 20]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+         type string;
+         description
+           "treshold value of the indicator";
+       }
+
+       leaf indicator-value-unit {
+         mandatory true;
+         type string;
+         description
+           "unit of indicator's value";
+       }
+
+       leaf threshold-type {
+         description
+           "it is used to indicate the trigger/clearing condition of
+           alert upon the threshold";
+
+         type enumeration {
+           enum upperbound-trigger {
+             description
+               "If the performace data exceeds this threshold value,
+               a TCA will be triggered";
+           }
+           enum lowerbound-trigger {
+             description
+               "if the performace data is lower than this threshold
+               value, a TCA will be triggered";
+           }
+           enum upperbound-clear {
+             description
+               "If the performance data is not longer bigger than this
+               threshold value, the TCA triggered before will be cleared
+               by system automatically";
+           }
+           enum lowerbound-clear {
+             description
+               "If the performance data is not longer lower than this
+               threshold value, the TCA triggered before will be cleared
+               by system automatically";
+           }
+         }
+       }
+
+       leaf period {
+         description
+           "it is used to indicate the interval as per monitoring task";
+
+         type identityref {
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 21]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+           base optrpm-types:period;
+         }
+       }
+
+       leaf severity {
+         description
+           "it is used to indicate what severity level of alert would be
+           triggered if not confirms to the threashold";
+
+         type identityref {
+           base optrpm-types:severity;
+         }
+       }
+     }
+
+     grouping tca-grouping {
+       description
+         "grouping of TCA configuration";
+
+       container applied-profiles {
+           description
+             "Information of applied TCA profiles on this resource";
+
+         list profile {
+             description
+               "list of applied TCA profile";
+
+           key "profile-id";
+
+           leaf profile-id {
+             description
+               "identifier of the applied TCA profile";
+
+             type leafref {
+               path "../../../../../optrpm:profiles/optrpm:profile" +
+               "/optrpm:profile-id";
+             }
+           }
+         }
+       }
+       container tca-cfg {
+         description
+           "detailed configuration of TCA";
+         list tca-indicator {
+            description
+              "list of tca indicator configuration";
+           key "indicator-name threshold-type period severity";
+           uses tca-indicator-grouping;
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 22]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+         }
+       }
+     }
+
+
+     rpc get-all-current-pm-data {
+       description
+         "this RPC is used to retrieve current performance data.";
+
+       input {
+         leaf-list resources {
+           description
+             "the identifier of resources from which current performace
+             data is collected";
+
+           type leafref {
+             path "/optrpm:performance-monitoring/optrpm:resources" +
+             "/optrpm:resource/optrpm:resource-id";
+           }
+         }
+       }
+       output {
+         container pm-data {
+           description
+             "result of current performance data";
+
+           list pm-data-list {
+             description
+               "list of curent performance data";
+
+             key resource;
+             uses pm-data-instance-grouping;
+           }
+         }
+       }
+     }
+
+     rpc get-historic-pm-data {
+       input {
+         description
+         "this RPC is used to retrieve historic performance data.";
+
+         leaf-list resources {
+           description
+             "the identifier of resources from which historic performace
+             data is collected";
+
+           type leafref {
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 23]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+             path "/optrpm:performance-monitoring/optrpm:resources" +
+             "/optrpm:resource/optrpm:resource-id";
+           }
+         }
+
+         leaf start-time {
+           description
+           "the starttime of performance data needed to be retrieved";
+
+           type yang:date-and-time;
+         }
+
+         leaf end-time {
+           description
+           "the endtime of performance data needed to be retrieved";
+
+           type yang:date-and-time;
+         }
+       }
+       output {
+         container pm-data {
+           description
+             "result of historic performance data";
+
+           list pm-data-list {
+             description
+               "list of historic performance data";
+
+             key resource;
+             uses pm-data-instance-grouping;
+           }
+         }
+       }
+     }
+
+     grouping pm-data-instance-grouping {
+       description
+         "grouping for common attributes of performance data";
+
+       leaf resource {
+       description
+         "the identifier of network resource which is monitored.";
+
+         type leafref {
+           path "/optrpm:performance-monitoring/optrpm:resources" +
+           "/optrpm:resource/optrpm:resource-id";
+         }
+       }
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 24]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+       leaf collect-time {
+         description
+           "the time of this data is collected";
+
+         type yang:date-and-time;
+       }
+
+       leaf resource-type {
+         description
+           "the type of resource, such as NE, board or port";
+
+         type identityref {
+           base optrpm-types:resource-type;
+         }
+       }
+
+       container indicator-data {
+         description
+           "grouping for historic performance data";
+
+         list indicator-data-list {
+           description
+             "list of historic performance data";
+           key indicator-name;
+
+           uses indicator-data-instance-grouping;
+         }
+       }
+     }
+
+     grouping indicator-data-instance-grouping {
+       description
+         "grouping for a performance data";
+
+       leaf indicator-name {
+         description
+           "name of performance data indicator";
+
+         type string;
+       }
+
+       leaf indicator-value {
+         description
+           "value of performance data";
+
+         type string;
+       }
+
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 25]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+       leaf indicator-value-unit {
+         description
+           "unit of performance data value";
+
+         type string;
+       }
+     }
+
+   }
+   <CODE ENDS>
+
+       Figure 2: Optical Resource Performance Monitoring YANG module
+
+6.  YANG Model for Optical Performance Monitoring Types
+
+   <CODE BEGINS> file "ietf-optical-resource-pm-types@2023-03-01.yang"
+   module ietf-optical-resource-pm-types {
+     yang-version 1.1;
+     namespace
+     "urn:ietf:params:xml:ns:yang:ietf-optical-resource-pm-types";
+
+     prefix optrpm-types;
+
+     organization
+       "IETF CCAMP Working Group";
+     contact
+       "WG Web:   <https://datatracker.ietf.org/wg/ccamp/>
+        WG List:  <mailto:ccamp@ietf.org>
+
+        Editor:   Chaode Yu
+                  <yuchaode@huawei.com>";
+
+     description
+       "This module defines types model for optical performance
+       monitoring which will be imported by ietf-performance-monitoring
+       data model.
+
+       The model fully conforms to the Network Management
+       Datastore Architecture (NMDA).
+
+       Copyright (c) 2022 IETF Trust and the persons
+       identified as authors of the code.  All rights reserved.
+
+       Redistribution and use in source and binary forms, with or
+       without modification, is permitted pursuant to, and subject
+       to the license terms contained in, the Revised BSD License
+       set forth in Section 4.c of the IETF Trust's Legal Provisions
+       Relating to IETF Documents
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 26]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+       (https://trustee.ietf.org/license-info).
+
+       This version of this YANG module is part of RFC XXXX; see
+       the RFC itself for full legal notices.
+
+       The key words 'MUST', 'MUST NOT', 'REQUIRED', 'SHALL', 'SHALL
+       NOT', 'SHOULD', 'SHOULD NOT', 'RECOMMENDED', 'NOT RECOMMENDED',
+       'MAY', and 'OPTIONAL' in this document are to be interpreted as
+       described in BCP 14 (RFC 2119) (RFC 8174) when, and only when,
+       they appear in all capitals, as shown here.";
+
+
+     revision 2023-03-01 {
+       description  "Initial revision.";
+
+     }
+
+     identity resource-type {
+       description "this is the base type of all the rerource type";
+     }
+
+     identity network-element {
+       base resource-type;
+           description "NE resource type";
+     }
+
+     identity board {
+       base resource-type;
+           description "board resource type";
+     }
+
+     identity termination-point {
+       base resource-type;
+           description "Termination point resource";
+     }
+
+     identity tunnel-termination-point {
+       base resource-type;
+           description "Tunnel termination point resource";
+     }
+
+     identity period {
+       description
+             "this is the base type of all the performace monitoring priod
+             type.";
+     }
+
+     identity period-15-minutes {
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 27]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+       base period;
+           description
+         "the during of monitoring task will be repeated at every 15
+             minutes";
+     }
+
+     identity period-24-hours {
+       base period;
+           description
+         "the during of monitoring task will be repeated at every 24
+             hours";
+     }
+
+     identity severity {
+       description
+             "it is used to indicate what severity alarm will be caused if
+             exceeds the threshold";
+     }
+
+     identity critical {
+       description
+             "critical alarm will be caused if exceeds the threshold";
+           base severity;
+     }
+
+     identity mayjor {
+       description
+             "mayjor alarm will be caused if exceeds the threshold";
+           base severity;
+     }
+
+     identity minor {
+       description
+             "minor alarm will be caused if exceeds the threshold";
+           base severity;
+     }
+
+     identity warning {
+       description
+             "only a warning will be caused if exceeds the threshold";
+           base severity;
+     }
+
+   }
+   <CODE ENDS>
+
+    Figure 3: Optical Resource Performance Monitoring Types YANG module
+
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 28]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+7.  Manageability Considerations
+
+   <Add any manageability considerations>
+
+8.  Security Considerations
+
+   The YANG module specified in this document defines a schema for data
+   that is designed to be accessed via network management protocols such
+   as NETCONF [RFC6241] or RESTCONF [RFC8040].  The lowest NETCONF layer
+   is the secure transport layer, and the mandatory-to-implement secure
+   transport is Secure Shell (SSH) [RFC6242].  The lowest RESTCONF layer
+   is HTTPS, and the mandatory-to-implement secure transport is TLS
+   [RFC8446].
+
+   The NETCONF access control model [RFC8341] provides the means to
+   restrict access for particular NETCONF or RESTCONF users to a
+   preconfigured subset of all available NETCONF or RESTCONF protocol
+   operations and content.
+
+   There are a number of data nodes defined in this YANG module that are
+   writable/creatable/deletable (i.e., config true, which is the
+   default).  These data nodes may be considered sensitive or vulnerable
+   in some network environments.  Write operations (e.g., edit-config)
+   to these data nodes without proper protection can have a negative
+   effect on network operations.  Considerations in Section 8 of
+   [RFC8795]are also applicable to their subtrees in the module defined
+   in this document.
+
+   Some of the readable data nodes in this YANG module may be considered
+   sensitive or vulnerable in some network environments.  It is thus
+   important to control read access (e.g., via get, get-config, or
+   notification) to these data nodes.  Considerations in Section 8 of
+   [RFC8795] are also applicable to their subtrees in the module defined
+   in this document.
+
+9.  IANA Considerations
+
+   This document registers following YANG modules in the YANG Module
+   Names registry [RFC6020].
+
+   name: ietf-optical-resource-pm namespace:
+   urn:ietf:params:xml:ns:yang:ietf-optical-resource-pm prefix: optrpm
+   reference: RFC XXXX: A YANG Data Model for Optical Performance
+   Monitoring
+
+
+
+
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 29]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   name: ietf-optical-resource-pm-types namespace:
+   urn:ietf:params:xml:ns:yang:ietf-optical-resource-pm-types prefix:
+   optrpm-types reference: RFC XXXX: A YANG Data Model for Optical
+   Performance Monitoring
+
+10.  References
+
+10.1.  Normative References
+
+   [RFC6020]  Bjorklund, M., Ed., "YANG - A Data Modeling Language for
+              the Network Configuration Protocol (NETCONF)", RFC 6020,
+              DOI 10.17487/RFC6020, October 2010,
+              <https://www.rfc-editor.org/info/rfc6020>.
+
+   [RFC6241]  Enns, R., Ed., Bjorklund, M., Ed., Schoenwaelder, J., Ed.,
+              and A. Bierman, Ed., "Network Configuration Protocol
+              (NETCONF)", RFC 6241, DOI 10.17487/RFC6241, June 2011,
+              <https://www.rfc-editor.org/info/rfc6241>.
+
+   [RFC6242]  Wasserman, M., "Using the NETCONF Protocol over Secure
+              Shell (SSH)", RFC 6242, DOI 10.17487/RFC6242, June 2011,
+              <https://www.rfc-editor.org/info/rfc6242>.
+
+   [RFC6991]  Schoenwaelder, J., Ed., "Common YANG Data Types",
+              RFC 6991, DOI 10.17487/RFC6991, July 2013,
+              <https://www.rfc-editor.org/info/rfc6991>.
+
+   [RFC7446]  Lee, Y., Ed., Bernstein, G., Ed., Li, D., and W. Imajuku,
+              "Routing and Wavelength Assignment Information Model for
+              Wavelength Switched Optical Networks", RFC 7446,
+              DOI 10.17487/RFC7446, February 2015,
+              <https://www.rfc-editor.org/info/rfc7446>.
+
+   [RFC7581]  Bernstein, G., Ed., Lee, Y., Ed., Li, D., Imajuku, W., and
+              J. Han, "Routing and Wavelength Assignment Information
+              Encoding for Wavelength Switched Optical Networks",
+              RFC 7581, DOI 10.17487/RFC7581, June 2015,
+              <https://www.rfc-editor.org/info/rfc7581>.
+
+   [RFC7950]  Bjorklund, M., Ed., "The YANG 1.1 Data Modeling Language",
+              RFC 7950, DOI 10.17487/RFC7950, August 2016,
+              <https://www.rfc-editor.org/info/rfc7950>.
+
+   [RFC8040]  Bierman, A., Bjorklund, M., and K. Watsen, "RESTCONF
+              Protocol", RFC 8040, DOI 10.17487/RFC8040, January 2017,
+              <https://www.rfc-editor.org/info/rfc8040>.
+
+
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 30]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   [RFC8340]  Bjorklund, M. and L. Berger, Ed., "YANG Tree Diagrams",
+              BCP 215, RFC 8340, DOI 10.17487/RFC8340, March 2018,
+              <https://www.rfc-editor.org/info/rfc8340>.
+
+   [RFC8341]  Bierman, A. and M. Bjorklund, "Network Configuration
+              Access Control Model", STD 91, RFC 8341,
+              DOI 10.17487/RFC8341, March 2018,
+              <https://www.rfc-editor.org/info/rfc8341>.
+
+   [RFC8342]  Bjorklund, M., Schoenwaelder, J., Shafer, P., Watsen, K.,
+              and R. Wilton, "Network Management Datastore Architecture
+              (NMDA)", RFC 8342, DOI 10.17487/RFC8342, March 2018,
+              <https://www.rfc-editor.org/info/rfc8342>.
+
+   [RFC8446]  Rescorla, E., "The Transport Layer Security (TLS) Protocol
+              Version 1.3", RFC 8446, DOI 10.17487/RFC8446, August 2018,
+              <https://www.rfc-editor.org/info/rfc8446>.
+
+   [RFC8795]  Liu, X., Bryskin, I., Beeram, V., Saad, T., Shah, H., and
+              O. Gonzalez de Dios, "YANG Data Model for Traffic
+              Engineering (TE) Topologies", RFC 8795,
+              DOI 10.17487/RFC8795, August 2020,
+              <https://www.rfc-editor.org/info/rfc8795>.
+
+   [TMF-518]  TM Forum (TMF), "Resource Performance Management",
+              TMF518_RPM , 2011,
+              <https://www.tmforum.org/resources/collection/mtosi-4-0>.
+
+10.2.  Informative References
+
+   [I-D.ietf-opsawg-yang-vpn-service-pm]
+              Wu, B., Wu, Q., Boucadair, M., de Dios, O. G., and B. Wen,
+              "A YANG Model for Network and VPN Service Performance
+              Monitoring", Work in Progress, Internet-Draft, draft-ietf-
+              opsawg-yang-vpn-service-pm-15, 11 November 2022,
+              <https://datatracker.ietf.org/doc/html/draft-ietf-opsawg-
+              yang-vpn-service-pm-15>.
+
+   [I-D.ietf-teas-actn-pm-telemetry-autonomics]
+              Lee, Y., Dhody, D., Vilalta, R., King, D., and D.
+              Ceccarelli, "YANG models for Virtual Network (VN)/TE
+              Performance Monitoring Telemetry and Scaling Intent
+              Autonomics", Work in Progress, Internet-Draft, draft-ietf-
+              teas-actn-pm-telemetry-autonomics-09, 11 July 2022,
+              <https://datatracker.ietf.org/doc/html/draft-ietf-teas-
+              actn-pm-telemetry-autonomics-09>.
+
+
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 31]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   [I-D.zheng-ccamp-client-pm-yang]
+              Zheng, H., Busi, I., Yanlei, Z., Lopez, V., and O. G. de
+              Dios, "A YANG Data Model for Client Signal Performance
+              Monitoring", Work in Progress, Internet-Draft, draft-
+              zheng-ccamp-client-pm-yang-07, 9 January 2023,
+              <https://datatracker.ietf.org/doc/html/draft-zheng-ccamp-
+              client-pm-yang-07>.
+
+   [RFC8454]  Lee, Y., Belotti, S., Dhody, D., Ceccarelli, D., and B.
+              Yoon, "Information Model for Abstraction and Control of TE
+              Networks (ACTN)", RFC 8454, DOI 10.17487/RFC8454,
+              September 2018, <https://www.rfc-editor.org/info/rfc8454>.
+
+   [RFC8632]  Vallin, S. and M. Bjorklund, "A YANG Data Model for Alarm
+              Management", RFC 8632, DOI 10.17487/RFC8632, September
+              2019, <https://www.rfc-editor.org/info/rfc8632>.
+
+   [RFC8641]  Clemm, A. and E. Voit, "Subscription to YANG Notifications
+              for Datastore Updates", RFC 8641, DOI 10.17487/RFC8641,
+              September 2019, <https://www.rfc-editor.org/info/rfc8641>.
+
+Acknowledgments
+
+   This document was prepared using kramdown.
+
+Authors' Addresses
+
+   Chaode Yu
+   Huawei Technologies
+   Email: yuchaode@huawei.com
+
+
+   Fabio Peruzzini
+   TIM
+   Email: fabio.peruzzini@telecomitalia.it
+
+
+   Yanlei Zheng
+   China Unicom
+   Email: zhengyanlei@chinaunicom.cn
+
+
+   Italo Busi
+   Huawei Technologies
+   Email: italo.busi@huawei.com
+
+
+
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 32]
+
+Internet-Draft         Performance Monitoring YANG            March 2023
+
+
+   Aihua Guo
+   Futurewei Technologies
+   Email: aihuaguo.ietf@gmail.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu, et al.              Expires 8 September 2023               [Page 33]
