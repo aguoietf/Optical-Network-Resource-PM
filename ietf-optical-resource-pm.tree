@@ -3,7 +3,7 @@ module: ietf-optical-resource-pm
       +--rw monitor-tasks
       |  +--rw monitor-task* [task-id]
       |     +--rw task-id          yang:uuid
-      |     +--rw resource-id?     leafref
+      |     +--rw resource?        leafref
       |     +--ro resource-type?   identityref
       |     +--rw task-name?       string
       |     +--rw admin-status?    enumeration
@@ -13,7 +13,6 @@ module: ietf-optical-resource-pm
       |        +--rw indicators
       |           +--rw indicator* [indicator-name]
       |              +--rw indicator-name          string
-	  |              +--rw indicator-type          identity(max/min/average/instance)
       |              +--rw indicator-value-unit?   string
       +--rw tca-management
       |  +--rw profiles
@@ -29,8 +28,8 @@ module: ietf-optical-resource-pm
       |  |           +--rw period                  identityref
       |  |           +--rw severity                identityref
       |  +--rw tcas
-      |     +--rw tca* [resource-id]
-      |        +--rw resource-id         leafref
+      |     +--rw tca* [resource]
+      |        +--rw resource            leafref
       |        +--ro resource-type?      identityref
       |        +--rw admin-status?       enumeration
       |        +--rw applied-profiles
@@ -45,14 +44,17 @@ module: ietf-optical-resource-pm
       |              +--rw period                  identityref
       |              +--rw severity                identityref
       +--rw resources
-         +--rw resource* [resource-id]
-            +--rw resource-id      union
-            +--ro resource-type?   identityref
-			+--ro indicator-capabilities*   leaf-list
-			
+         +--rw resource-list* [resource]
+            +--rw resource             union
+            +--ro resource-type?       identityref
+            +--rw holding-time?        uint8
+            +--rw pm-parameter-list* [layer-rate]
+            |  +--rw layer-rate        identityref
+            |  +--rw indicator-name*   string
+            +--rw sub-resources*       leafref
 rpcs:
-   +---x get-all-current-pm-data    
-   |  +--ro input                            (支持两种不同当前性能数据的查询)
+   +---x get-all-current-pm-data                      
+   |  +--ro input     
    |  |  +--ro resources*   leafref
    |  +--ro output    
    |     +--ro pm-data
@@ -65,19 +67,29 @@ rpcs:
    |                 +--ro indicator-name          string
    |                 +--ro indicator-value?        string
    |                 +--ro indicator-value-unit?   string
-   +---x get-historic-pm-data       
+   +---x get-historic-pm-data                         
+   |  +--ro input     
+   |  |  +--ro resources*    leafref
+   |  |  +--ro start-time?   yang:date-and-time
+   |  |  +--ro end-time?     yang:date-and-time
+   |  +--ro output    
+   |     +--ro pm-data
+   |        +--ro pm-data-list* [resource]
+   |           +--ro resource          leafref
+   |           +--ro collect-time?     yang:date-and-time
+   |           +--ro resource-type?    identityref
+   |           +--ro indicator-data
+   |              +--ro indicator-data-list* [indicator-name]
+   |                 +--ro indicator-name          string
+   |                 +--ro indicator-value?        string
+   |                 +--ro indicator-value-unit?   string
+   +---x clear-performance-monitoring-data            
+   |  +--ro input     
+   |  |  +--ro resources*   leafref
+   |  +--ro output    
+   |     +--ro failed-resources*   leafref
+   +---x get-profile-associated-termination-points    
       +--ro input     
-      |  +--ro resources*    leafref
-      |  +--ro start-time?   yang:date-and-time
-      |  +--ro end-time?     yang:date-and-time
+      |  +--ro profile-id?   leafref
       +--ro output    
-         +--ro pm-data
-            +--ro pm-data-list* [resource]
-               +--ro resource          leafref
-               +--ro collect-time?     yang:date-and-time
-               +--ro resource-type?    identityref
-               +--ro indicator-data
-                  +--ro indicator-data-list* [indicator-name]
-                     +--ro indicator-name          string
-                     +--ro indicator-value?        string
-                     +--ro indicator-value-unit?   string
+         +--ro resource-list*   leafref
