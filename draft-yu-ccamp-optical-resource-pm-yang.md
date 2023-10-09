@@ -1,10 +1,10 @@
 ---
 coding: utf-8
 
-title: A YANG Data Model for Optical Performance Monitoring
+title: A YANG Data Model for Optical Resource Performance Monitoring
 
 abbrev: Performance Monitoring YANG
-docname: draft-yu-ccamp-performance-monitoring-yang-00
+docname: draft-yu-ccamp-optical-resource-pm-yang-01
 workgroup: CCAMP Working Group
 category: std
 ipr: trust200902
@@ -33,6 +33,10 @@ author:
     name: Aihua Guo
     org: Futurewei Technologies
     email: aihuaguo.ietf@gmail.com
+  -
+    name: Victor Lopez
+    org: Nokia
+    email: victor.lopez@nokia.com
 
 normative:
   TMF-518:
@@ -42,6 +46,14 @@ normative:
     date:  2011
     seriesinfo: TMF518_RPM
     target: https://www.tmforum.org/resources/collection/mtosi-4-0
+
+  ITU-T_G.7710:
+    title: Common equipment management function requirements
+    author:
+      org: International Telecommunication Union
+    date:  October 2020
+    seriesinfo: ITU-T Recommendation G.7710
+    target:
 
 --- abstract
 
@@ -59,11 +71,11 @@ Using RESTCONF does not mean changing existing performance monitoring requiremen
 
 Traditional performance management involves control of performance monitoring, setting collectors on monitored objects, and obtaining performance data in different periods. The data can be current data on devices or processed by PNC, and historical performance data. TCA can be also configured by performance monitoring tasks.
 
-The explanation of performance monitoring indicator would also be an important part of this document, especially some typical optical-specific indicators.
+Session 10 of {{ITU-T_G.7710}} has provided very detail description of performance management, including the performance monitoring application and functions. The performance monitoring indicators define in {{ITU-T_G.7710}} will be referenced as suggested indicators to be implemented.
 
 Currently, there are some existing documents related to performance monitoring in IETF, but there is no overlap with our current work. For example:
 
-{{?I-D.ietf-teas-actn-pm-telemetry-autonomics}} provides a YANG data model that describes performance monitoring and scaling intent mechanisms for TE-Tunnels and Virtual Networks(VNs). VN is determinated to be used in CMI (CNC-MDSC Interface) level and TE tunnel is more service or connection related. Our data model is proposed to be used in MPI (MDSC-PNC Interface) level and this performance monitoring is performed on network resources, such as network element, board, fiber, port or TTP (Tunnel Termination Point), which are not included in {{?I-D.ietf-teas-actn-pm-telemetry-autonomics}}.
+{{?I-D.ietf-teas-actn-pm-telemetry-autonomics}} provides a YANG data model that describes performance monitoring and scaling intent mechanisms for TE-Tunnels and Virtual Networks(VNs). VN is determinate to be used in CMI (CNC-MDSC Interface) level and TE tunnel is more service or connection related. Our data model is proposed to be used in MPI (MDSC-PNC Interface) level and this performance monitoring is performed on network resources, such as network element, board, fiber, port or TTP (Tunnel Termination Point), which are not included in {{?I-D.ietf-teas-actn-pm-telemetry-autonomics}}.
 
 {{?I-D.ietf-opsawg-yang-vpn-service-pm}} defines a YANG data model for performance monitoring of both network topology layer and overlay VPN service topology layer. VPN service is more IP-specific and not adopted in Optical domain. And the data model in this document is augmenting network model. If the client wants to retrieve performance data of a link by RESTCONF, the URL would be probably same with the URL of topology retrieval. This may need some special mechanisms to make the client and server differentiate the using scenarios. This is not quite compliance with current O&M habits of Optical technology.
 
@@ -115,18 +127,47 @@ According to the business requirements stated in {{TMF-518}}, resource performan
 * The Interface shall support the retrieval of current and historical performance measurements for network resources.
 * The Interface shall support the distribution of TCAs to subscribed OSs.
 
-For these requirements of PM, there are three group of interfaces are defined in TMF, including PerformanceManagementControl, PerformanceManagementRetrieval and ThresholdCrossingAlertControlm.
+For these requirements of PM, there are three group of interfaces are defined in TMF, including PerformanceManagementControl, PerformanceManagementRetrieval and ThresholdCrossingAlertControl.
 
-## Performance Management Control
+## Generic Resource
+The definition of most performance monitoring interfaces in TMF is quite generic. And it is also similar that the functionalities of both alarm and performance monitoring can be defined with a generic structure, regardless of what kind of object is operated on. Therefore, our data model prefer to follow this approach. And when defining our data model, we get refer to {{?RFC8632}}, in which a generic alarm data model is provided. In {{?RFC8632}}, a union type of resource attributes is defined as the source of alarm. So we also reference this structure in our data model.
+
+Additionally, we extend a resource-type attribute to indicate what exact kind of resource is. Firstly, this attribute can help to improve interaction efficiency between PNC and MDSC. The MDSC may quickly identify the resource type from this attribute, without parsing the resource identifier or searching the resource id in the whole resource. On the other hand, it will be unified with the existing IETF topology and inventory objects and form a complete interface system.
+
+~~~~ ascii-art
+module: ietf-optical-resource-pm
+   +--rw performance-monitoring
+      +--rw resources
+         +--rw resource-list* [resource]
+            +--rw resource             union
+            +--ro resource-type?       identityref
+~~~~
+
+## PerformanceManagementControl
 
 There are three interfaces defined in TMF for this group, including:
 * clearPerformanceMonitoringData: This interface shall allow MDSC to clear or reset the performance register on TPs or NEs. This clearing operation means to reset the data value to the current value. The monitoring job is still running on.
 * disablePerformanceMonitoringData: This interface shall allow MDSC disable PM data collection on a list of TPs or NEs.
 * enablePerformanceMonitoringData: This interface shall allow MDSC enable PM data collection on a list of TPs or NEs.
 
-This aspect of interface we introduce a monitor task to do this control. In the monitoring task, MDSC should be able to configure what period and what kind of performance data it want to collect. The disabling, enabling operation can be satisfy by changing the admin status which includes disabled, enabled. The change's result will affect the task status accordingly.
+### clearPerformanceMonitoringData
 
-//NOTES: To be added. to support the clearPerformanceMonitoringData
+Because the performance data can be changed frequently, so the current and history performance data are not suitable to define in a data model. Clearing performance monitoring data is more suitable to define an RPC to perform this operation. Especially according  to the MTOSI interface, this clearing operation can be operated on multiple objects in one request. Currently there is not such an approach to support this kind of flexible method if using data API. Therefore we define a RPC operation to support this function.
+
+~~~~ ascii-art
+rpcs:
+   +---x clear-performance-monitoring-data
+      +--ro input
+      |  +--ro resources*   leafref
+      +--ro output
+         +--ro failed-resources*   leafref
+~~~~
+
+If there are any resources failed to clear performance monitoring data, their identifier should be returned by the failed-resources leaf list. An empty list indicates that this operation was performed successfully.
+
+### enablePerformanceMonitoringData & disablePerformanceMonitoringData
+
+For interfaces of enable/disable performance monitoring data, we introduce a monitor task to do this control. In the monitoring task, MDSC should be able to configure what period and what kind of performance data it want to collect. The disabling, enabling operation can be satisfy by changing the admin status which includes disabled, enabled. The change's result will affect the task status accordingly.
 
 ~~~~ ascii-art
 module: ietf-optical-resource-pm
@@ -155,10 +196,13 @@ There are six interfaces are defined in TMF for this group, including:
 * getAllPerformanceMonitoringPoints: This interface should allow MDSC to retrieve all the performance monitoring points in a specified termination point or NE.
 * getHoldingTime: This interface should allow MDSC to retrieve how many hours PM data records are held in PNC.
 * getMePerformanceMonitoringCapabilities: This interface should allow MDSC to retrieve what parameters are supported by a specified NE or termination point.
+* getProfileAssociatedTerminationPoints： The Interface shall allow MDSC to retrieve the names of all the TPs known to the PNC that are associated with a specified Threshold Crossing Alert (TCA) Parameter Profile.
 
-For the retrieval of current/historic performance data, there is one option that we define the value in the data model. But considered that performance data is frequently changed and if we follow that approach, according to the requirement of on-change notification in YANG-push {{?RFC8641}}, once the performance data changes, the PNC should trigger a notifcation to the MDSC, for the sake of data consistency. But these two retrieval interfaces is more like on-demand invoking. The interaction through notification would bring great pressure to both PNC and MDSC.
+### getAllCurrentPerformanceMonitoringData & getHistoryPerformanceMonitoringData
 
-And it is also hard to support retrieving performance data of multiple resources by data model. And for historic performance data retrieval, there could be a requirement to specify the start time and end time. It is not quite flexible to support this requirement by data model neither.
+For the retrieval of current/historic performance data, we consider these data are not suitable to define in a data model. Because performance data can be changed frequently and if we follow that approach, according to the requirement of on-change notification in YANG-push {{?RFC8641}}, once the performance data changes, the PNC should trigger a notification to the MDSC, there would be great amount of notifications reported in the big network. These great amount of notifications will bring great pressure to both PNC and MDSC. People don't use notification to get performance data in real network.
+
+These two retrieval interfaces are usually invoked on-demand. It is also hard to support retrieving performance data of multiple resources by data model in one request. And for historic performance data retrieval, there could be a requirement to specify the start time and end time. It is not quite flexible to support this requirement by data model neither.
 
 So we suggest to define two RPCs to accomplish these two interfaces' function.
 
@@ -196,9 +240,39 @@ rpcs:
                      +--ro indicator-value-unit?   string
 ~~~~
 
-//NOTE: To be futhur analyze: getAllPerformanceMonitoringPoints, getHoldingTime, getMePerformanceMonitoringCapabilities
+### getAllPerformanceMonitoringPoints & getHoldingTime & getMePerformanceMonitoringCapabilities
 
-## Threshold Crossing Alert Control
+These three interfaces allow MDSC to retrieve performance monitoring points, holding time, and performance monitoring capabilities (indicators) as per a specific resource. We consider that these information are all performance monitoring capabilities in a broad sense. These information should be defined under the resource node.
+
+~~~~ ascii-art
+module: ietf-optical-resource-pm
+      +--rw resources
+         +--rw resource-list* [resource]
+            +--rw resource             union
+            +--ro resource-type?       identityref
+            +--rw holding-time?        uint8
+            +--rw pm-parameter-list* [layer-rate]
+            |  +--rw layer-rate        identityref
+            |  +--rw indicator-name*   string
+            +--rw sub-resources*       leafref
+~~~~
+
+The sub-resources is list of the performance monitoring points' identifier. And the pm-parameter-list is the indicators that can be supported by this specific resource.
+
+### getProfileAssociatedTerminationPoints
+
+For the TCA related definition, it can be found in the next session. A TCA profile can be associated with a lot of resources, so we don't defined a  resource list under the profile instance to avoid reporting some unnecessary  notifications while the resource instances in this list have been changed. We define a RPC operation to support this flexible retrieval request.
+
+~~~~ ascii-art
+rpcs:
+   +---x get-profile-associated-termination-points
+      +--ro input
+      |  +--ro profile-id?   leafref
+      +--ro output
+         +--ro resource-list*   leafref
+~~~~
+
+## ThresholdCrossingAlertControl
 
 There are nine interfaces are defined in TMF for this group, including:
 * createTcaParameterProfile: This interface should allow MDSC to create a new TCA parameter profile. This profile can be applied to the resources.
@@ -309,28 +383,14 @@ module: ietf-optical-resource-pm
       |              +--rw severity                identityref
 ~~~~
 
-## Generic Resource
-The definition of most performance monitoring interfaces in TMF is quite generic. And it is also similar that the functionalities of both alarm and performance monitoring can be defined with a generic structure, regardless of what kind of object is operated on. Therefore, our data model prefer to follow this approach. And when defining our data model, we get refer to {{?RFC8632}}, in which a generic alarm data model is provided. In {{?RFC8632}}, a union type of resource attributes is defined as the source of alarm. So we also reference this structure in our data model.
-
-Additionally, we extend a resource-type attribute to indicate what exact kind of resource is. Firstly, this attribute can help to improve interaction efficiency between PNC and MDSC. The MDSC may quickly identify the resource type from this attribute, without parsing the resource identifier or searching the resource id in the whole resource. On the other hand, it will be unified with the existing IETF topology and inventory objects and form a complete interface system.
-
-~~~~ ascii-art
-module: ietf-optical-resource-pm
-   +--rw performance-monitoring
-      +--rw resources
-         +--rw resource* [resource-id]
-            +--rw resource-id      union
-            +--ro resource-type?   identityref
-~~~~
-
-
 # Performance Indicator Introduction
-//To Be Added
+//To Be Added. see {{ITU-T_G.7710}}
+
 
 # Optical Performance Monitoring Tree Diagram
 
 ~~~~ ascii-art
-{::include ./ietf-optical-resource-pm@2023-03-01.tree}
+{::include ./ietf-optical-resource-pm.tree}
 ~~~~
 {: #fig-rpm-tree title="Optical Resource Performance Monitoring tree diagram"
 artwork-name="ietf-optical-resource-pm.tree"}
@@ -338,18 +398,18 @@ artwork-name="ietf-optical-resource-pm.tree"}
 # YANG Model for Optical Performance Monitoring
 
 ~~~~ yang
-{::include ./ietf-optical-resource-pm@2023-03-01.yang}
+{::include ./ietf-optical-resource-pm.yang}
 ~~~~
 {: #fig-rpm-yang title="Optical Resource Performance Monitoring YANG module"
-sourcecode-markers="true" sourcecode-name="ietf-optical-resource-pm@2023-03-01.yang"}
+sourcecode-markers="true" sourcecode-name="ietf-optical-resource-pm@2023-07-04.yang"}
 
 # YANG Model for Optical Performance Monitoring Types
 
 ~~~~ yang
-{::include ./ietf-optical-resource-pm-types@2023-03-01.yang}
+{::include ./ietf-optical-resource-pm-types.yang}
 ~~~~
 {: #fig-rpm-type-yang title="Optical Resource Performance Monitoring Types YANG module"
-sourcecode-markers="true" sourcecode-name="ietf-optical-resource-pm-types@2023-03-01.yang"}
+sourcecode-markers="true" sourcecode-name="ietf-optical-resource-pm-types@2023-07-04.yang"}
 
 # Manageability Considerations
 
