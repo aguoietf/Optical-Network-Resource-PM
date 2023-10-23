@@ -4,7 +4,7 @@ coding: utf-8
 title: A YANG Data Model for Optical Resource Performance Monitoring
 
 abbrev: Performance Monitoring YANG
-docname: draft-yu-ccamp-optical-resource-pm-yang-01
+docname: draft-yu-ccamp-optical-resource-pm-yang-02
 workgroup: CCAMP Working Group
 category: std
 ipr: trust200902
@@ -37,6 +37,10 @@ author:
     name: Victor Lopez
     org: Nokia
     email: victor.lopez@nokia.com
+  -
+    name: Xing Zhao
+    org: CAICT
+    email: zhaoxing@caict.ac.cn
 
 normative:
   TMF-518:
@@ -53,7 +57,15 @@ normative:
       org: International Telecommunication Union
     date:  October 2020
     seriesinfo: ITU-T Recommendation G.7710
-    target:
+    target: https://www.itu.int/rec/T-REC-G.7710/en
+
+  ITU-T_G.874:
+    title: Management aspects of optical transport network elements
+    author:
+      org: International Telecommunication Union
+    date:  October 2020
+    seriesinfo: ITU-T Recommendation G.874
+    target: https://www.itu.int/rec/T-REC-G.874/en
 
 --- abstract
 
@@ -71,7 +83,9 @@ Using RESTCONF does not mean changing existing performance monitoring requiremen
 
 Traditional performance management involves control of performance monitoring, setting collectors on monitored objects, and obtaining performance data in different periods. The data can be current data on devices or processed by PNC, and historical performance data. TCA can be also configured by performance monitoring tasks.
 
-Session 10 of {{ITU-T_G.7710}} has provided very detail description of performance management, including the performance monitoring application and functions. The performance monitoring indicators define in {{ITU-T_G.7710}} will be referenced as suggested indicators to be implemented.
+ITU-T also has a lot of related recommendations for performance monitoring. Such as session 10 of {{ITU-T_G.7710}} has provided very detail description of performance management application and functions. {{ITU-T_G.7710}} does not provide a UML model or YANG module to guide the implementation of PNC while this document does.
+
+Section 10.2 of {{ITU-T_G.874}} provides a list of OM indicators which are on the NE level, which could help to reduce duplicated definition of performance indicators.
 
 Currently, there are some existing documents related to performance monitoring in IETF, but there is no overlap with our current work. For example:
 
@@ -196,7 +210,7 @@ There are six interfaces are defined in TMF for this group, including:
 * getAllPerformanceMonitoringPoints: This interface should allow MDSC to retrieve all the performance monitoring points in a specified termination point or NE.
 * getHoldingTime: This interface should allow MDSC to retrieve how many hours PM data records are held in PNC.
 * getMePerformanceMonitoringCapabilities: This interface should allow MDSC to retrieve what parameters are supported by a specified NE or termination point.
-* getProfileAssociatedTerminationPoints： The Interface shall allow MDSC to retrieve the names of all the TPs known to the PNC that are associated with a specified Threshold Crossing Alert (TCA) Parameter Profile.
+* getProfileAssociatedTerminationPoints: The Interface shall allow MDSC to retrieve the names of all the TPs known to the PNC that are associated with a specified Threshold Crossing Alert (TCA) Parameter Profile.
 
 ### getAllCurrentPerformanceMonitoringData & getHistoryPerformanceMonitoringData
 
@@ -384,7 +398,12 @@ module: ietf-optical-resource-pm
 ~~~~
 
 # Performance Indicator Introduction
-//To Be Added. see {{ITU-T_G.7710}}
+
+In the session10.2 of {{ITU-T_G.874}}, a performance management information table lists all the PM current data and history data collected on the EMF(Equipment Management Function). Since it is quite mature, this document would not like to do a duplicated research and would like to reference this recommendation. It is suggested to use the existing PM indicator listed in this table only if it is missing.
+
+It is impossible to list all the PM indicator exhaustively, even if ITU-T has done a lot of work. Some new performance indicators would be raised once there are some new requirements and technologies. So in this document we would like to provide String type rather than an explicit type for performance indicator, to have a better compatibility for future extension. Then if there are some new indicators, there is no need to revise this document or create a branch of documents to standardize the PM indicators.
+
+Although this approach seems too flexible, the integration will not be affected if the MDSC and PNC make a good agreement in advanced.
 
 
 # Optical Performance Monitoring Tree Diagram
